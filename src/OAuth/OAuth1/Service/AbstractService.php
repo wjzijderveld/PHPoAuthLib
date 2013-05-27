@@ -45,10 +45,11 @@ abstract class AbstractService extends BaseAbstractService implements ServiceInt
      */
     public function requestRequestToken()
     {
-        $authorizationHeader = array('Authorization' => $this->buildAuthorizationHeaderForTokenRequest());
+        $uri = $this->getRequestTokenEndpoint();
+        $authorizationHeader = array('Authorization' => $this->buildAuthorizationHeaderForTokenRequest($uri));
         $headers = array_merge($authorizationHeader, $this->getExtraOAuthHeaders());
 
-        $responseBody = $this->httpClient->retrieveResponse($this->getRequestTokenEndpoint(), array(), $headers);
+        $responseBody = $this->httpClient->retrieveResponse($uri, array(), $headers);
 
         $token = $this->parseRequestTokenResponse( $responseBody );
         $this->storage->storeAccessToken( $token );
@@ -90,16 +91,14 @@ abstract class AbstractService extends BaseAbstractService implements ServiceInt
 
         $extraAuthenticationHeaders = array(
             'oauth_token' => $token,
-        );
-
-        $authorizationHeader = array('Authorization' => $this->buildAuthorizationHeaderForTokenRequest($extraAuthenticationHeaders));
-        $headers = array_merge($authorizationHeader, $this->getExtraOAuthHeaders());
-
-        $bodyParams = array(
             'oauth_verifier' => $verifier,
         );
 
-        $responseBody = $this->httpClient->retrieveResponse($this->getAccessTokenEndpoint(), $bodyParams, $headers);
+        $uri = $this->getAccessTokenEndpoint();
+        $authorizationHeader = array('Authorization' => $this->buildAuthorizationHeaderForTokenRequest($uri, $extraAuthenticationHeaders));
+        $headers = array_merge($authorizationHeader, $this->getExtraOAuthHeaders());
+
+        $responseBody = $this->httpClient->retrieveResponse($uri, array(), $headers);
 
         $token = $this->parseAccessTokenResponse( $responseBody );
         $this->storage->storeAccessToken( $token );
@@ -155,11 +154,11 @@ abstract class AbstractService extends BaseAbstractService implements ServiceInt
      * @param array $extraParameters
      * @return string
      */
-    protected function buildAuthorizationHeaderForTokenRequest(array $extraParameters = array())
+    protected function buildAuthorizationHeaderForTokenRequest(UriInterface $uri, array $extraParameters = array())
     {
         $parameters = $this->getBasicAuthorizationHeaderInfo();
         $parameters = array_merge($parameters, $extraParameters);
-        $parameters['oauth_signature'] = $this->signature->getSignature($this->getRequestTokenEndpoint(), $parameters, 'POST');
+        $parameters['oauth_signature'] = $this->signature->getSignature($uri, $parameters, 'POST');
 
         $authorizationHeader = 'OAuth ';
         $delimiter = '';

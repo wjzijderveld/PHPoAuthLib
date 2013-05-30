@@ -208,12 +208,13 @@ abstract class AbstractService extends BaseAbstractService implements ServiceInt
      */
     protected function getBasicAuthorizationHeaderInfo()
     {
+        $date = new \DateTime();
         $headerParameters = array(
             'oauth_callback'         => $this->credentials->getCallbackUrl(),
             'oauth_consumer_key'     => $this->credentials->getConsumerId(),
             'oauth_nonce'            => $this->generateNonce(),
             'oauth_signature_method' => $this->getSignatureMethod(),
-            'oauth_timestamp'        => (new \DateTime())->format('U'),
+            'oauth_timestamp'        => $date->format('U'),
             'oauth_version'          => $this->getVersion(),
         );
 
